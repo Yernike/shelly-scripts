@@ -1,6 +1,7 @@
 # Scripts of Shelly Gen2 Devices
 - [Cover Security Stop](#cover-security-stop) 
 - [Power Regulator Shelly EM and Shelly UNI](#power-regulator-shelly-em-and-shelly-uni)
+- [Thermostat](#thermostat)
 
 ## Cover Security Stop
 This script allows to stop a 2PM shelly in cover mode when
@@ -39,14 +40,44 @@ You need to to connect the OUT1 and OUT2 of Shelly UNI to Increase and Decrease 
 Then you have to install Shelly EM in your main phase wire
 
 <img src="https://user-images.githubusercontent.com/2444886/207832873-40ae981f-be1e-4a80-b5cd-d85ad53b65e3.png" width="250">
-     
+
+**Script Configuration**    
 Configure the ShellyEM IP and Channel (0 or 1) in script configuration
 Configure the Shelly Uni IP and Channels of increase and decrease
 Configure the Max Power in which the regulator will decrease
 
 <img src="https://user-images.githubusercontent.com/2444886/207827541-1d100148-f1aa-4f61-a8c1-303dd533dff9.png" width="250">
 
+## Thermostat ##
+This script is a thermostat cool or heat mode, it turns the switch on or off based on temperature, setting a temperature change limit called hysteresis
 
+**Devices:**
+- Shelly Plus 1 or Shelly Plus 1PM,
+- Shelly Plus Addon
+- Sensor DS18B20
+
+**Instructions:**
+
+Connect the DS18B20 to VCC, DATA, GND in Plus Addon
+
+<img src="https://user-images.githubusercontent.com/2444886/207860016-4fb0b9a1-d3fd-403e-a77b-ed787ef2fe88.jpeg" width="400">
+
+You need to Add Peripheral as Temperature (DS18B20)
+
+<img src="https://user-images.githubusercontent.com/2444886/207860196-87d45010-f962-4f8b-9150-c797b1c60899.png" width="400">
+
+**Script Configuration**
+
+- Config temperature = temperature that you want to reach
+- Config hysteresis = threshold of temperature change to enable or disable switch
+- Config mode = (H)Heat or (C)Cool. 
+     - In Cool Mode (C) the switch is activated when the temperature is higher than Config Temperature + Config Threshold and the switch is disabled
+    when temperature is less or equal than Config Temperature
+     - In Heat Mode (H)  the switch is activated when the temperature is less than Config Temperature + Config Threshold and the switch is disabled
+    when temperature is higher or equal than Config Temperature
+Config sensorId = is the sensor id provided by the device when adding the peripheral ex: the name of Peripheral = Temperature (100)
+
+<img src="https://user-images.githubusercontent.com/2444886/207861148-07c92620-e9cb-47f2-a8ab-3c8485ae2201.png" width="200">
 
 
 
