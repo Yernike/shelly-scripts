@@ -23,16 +23,18 @@
 //    when temperature is less or equal than Config Temperature
 //  - In Heat Mode (H)  the switch is activated when the temperature is less than Config Temperature + Config Threshold and the switch is disabled
 //    when temperature is higher or equal than Config Temperature
+//Config sensorId = is the sensor id provided by the device when adding the peripheral ex: the name of Peripheral = Temperature (100)
 
 let CONFIG ={
     temperature: 28,
     hysteresis: 2,
-    mode: "H"
+    mode: "H",
+    sensorId: 100
   };
   
   Shelly.addStatusHandler(function (event) {
     
-    if (event.name === "temperature" && event.id === 100) {
+    if (event.name === "temperature" && event.id === CONFIG.sensorId) {
   
       let temperature = event.delta.tC;
       print(temperature);
