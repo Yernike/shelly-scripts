@@ -4,12 +4,13 @@
 // Date: 15/12/2022
 // Version: 1.0
 //
-// Shelly Script: This script allows to stop a 2PM shelly in cover mode when
-// the digital input of Addon Plus is closed
+// Shelly Script: This script is a thermostat cool or heat, it turns the 
+// switch on or off based on temperature, setting a temperature change limit called hysteresis
 //
 // Devices: 
-// - Shelly 2PM (to control cover),
-// - Shelly Plus Addon (to close contact in digital input)
+// - Shelly Plus 1 or Shelly Plus 1PM,
+// - Shelly Plus Addon
+// - Sensor DS18B20
 //
 // www.shellycanarias.com
 // -----------------------------------------------------------------------
