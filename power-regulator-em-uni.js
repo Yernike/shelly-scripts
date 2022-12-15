@@ -71,7 +71,7 @@ function regulateUni(power){
       regStatus -= 1;
       print("-1");
     } 
-    else if (power < CONFIG.max_Power + CONFIG.threshold && regStatus < CONFIG.regulator_steps) {
+    else if (power < CONFIG.max_Power - CONFIG.threshold && regStatus < CONFIG.regulator_steps) {
       setShellyUni(CONFIG.shellyUni_UpChannel);
       regStatus += 1;
       print("+1");
