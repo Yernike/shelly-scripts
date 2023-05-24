@@ -1,3 +1,26 @@
+// -----------------------------------------------------------------------
+// Developed by YBC
+//
+// Date: 24/05/2022
+// Version: 1.0
+//
+// Shelly Script: This script allow register up to 45x BLU Button1 to use autonomous open door.  
+// When you push the registered BLU Button1, the relay turn on and turn off in 1 second.
+//
+// DEVICES: 
+// - Shelly PLUS 1 (to use bluetooth gateway and run the script),
+// - Shelly BLU Button 1 (to send push)
+//
+// INSTRUCTIONS
+// Register BLU Button1
+// When you plug your Shelly Plus, you have 10 seconds to register and unregister.
+//
+//- Push one time BLU Button1 until 10s you register the button
+//- Push twice BLU Button1 until 10s you unregister the button
+//
+// www.shellycanarias.com
+// -----------------------------------------------------------------------
+
 
 let BTHparsedd = null;
 let local_name = null;
