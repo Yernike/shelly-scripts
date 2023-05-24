@@ -2,6 +2,7 @@
 - [Cover Security Stop](#cover-security-stop) 
 - [Power Regulator Shelly EM and Shelly UNI](#power-regulator-shelly-em-and-shelly-uni)
 - [Thermostat](#thermostat)
+- [Autonomous BLU Button1] (#autonomous-blu-button1)
 
 ## Cover Security Stop
 This script allows to stop a 2PM shelly in cover mode when
@@ -79,5 +80,19 @@ Config sensorId = is the sensor id provided by the device when adding the periph
 
 <img src="https://user-images.githubusercontent.com/2444886/207861148-07c92620-e9cb-47f2-a8ab-3c8485ae2201.png" width="200">
 
+## Autonomous BLU Button1 ##
+This script allow register up to 45x BLU Button1 to use autonomous open door.  When you push the registered BLU Button1, the relay turn on and turn off in 1 second.
 
+**Devices:**
+- Shelly Plus 1
+- Shelly BLU Button 1
 
+**Instructions:**
+- Plug the Shelly Plus
+- Install and run this script
+
+- Register BLU Button1
+  When you plug your Shelly Plus, you have 10 seconds to register and unregister BLU Buttons, this is recorder in internal memory.
+
+- Push one time BLU Button1 until 10s you register the button
+- Push twice BLU Button1 until 10s you unregister the button
