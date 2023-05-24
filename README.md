@@ -2,7 +2,7 @@
 - [Cover Security Stop](#cover-security-stop) 
 - [Power Regulator Shelly EM and Shelly UNI](#power-regulator-shelly-em-and-shelly-uni)
 - [Thermostat](#thermostat)
-- [Autonomous BLU Button1] (#autonomous-blu-button1)
+- [Autonomous BLU Button1](#autonomous-blu-button1)
 
 ## Cover Security Stop
 This script allows to stop a 2PM shelly in cover mode when
