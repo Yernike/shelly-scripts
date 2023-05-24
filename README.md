@@ -83,7 +83,7 @@ Config sensorId = is the sensor id provided by the device when adding the periph
 ## Autonomous BLU Button1 ##
 This script allow register up to 45x BLU Button1 to use autonomous open door.  When you push the registered BLU Button1, the relay turn on and turn off in 1 second.
 
-![image](https://github.com/Yernike/shelly-scripts/assets/2444886/f623dcc0-9188-479a-a8cb-38c3a4ca995b)
+<img src="https://github.com/Yernike/shelly-scripts/assets/2444886/f623dcc0-9188-479a-a8cb-38c3a4ca995b" width="400">
 
 
 **Devices:**
