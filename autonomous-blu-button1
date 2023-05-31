@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------
 // Developed by YBC
 //
-// Date: 24/05/2022
-// Version: 1.0
+// Date: 31/05/2022
+// Version: 1.1
 //
 // Shelly Script: This script allow register up to 45x BLU Button1 to use autonomous open door.  
 // When you push the registered BLU Button1, the relay turn on and turn off in 1 second.
@@ -259,9 +259,11 @@ let buttons_cache = [];
 let ACTIVE_SCAN = true;
 
 let last_packet_id = 0x100;
-let encontrado = false;
+
 // SCAN OF PAIRING / UNPAIRING BUTTONS (One click for Pairing, Double click for Unpairing)
 function scanBLE(ev, res) {
+    
+    let encontrado = false;
     //console.log(BUTTONS_ADDR_CACHE[0]);
     if (ev !== BLE.Scanner.SCAN_RESULT) return;
     // skip if there is no service_data member
