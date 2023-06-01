@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------
 // Developed by YBC
 //
-// Date: 31/05/2022
-// Version: 1.1
+// Date: 01/06/2022
+// Version: 1.2
 //
 // Shelly Script: This script allow register up to 45x BLU Button1 to use autonomous open door.  
 // When you push the registered BLU Button1, the relay turn on and turn off in 1 second.
@@ -22,6 +22,7 @@
 // -----------------------------------------------------------------------
 
 
+
 let BTHparsedd = null;
 let local_name = null;
 //FUNCIONES DE ALMACENAMIENTO DE BOTONES
@@ -35,7 +36,7 @@ let btnAction = {
 
         if (BTHparsedd.Button === 1 || BTHparsedd.Button === 2) {
             //console.log("Boton pulsado", JSON.stringify(BTHparsedd));
-            Shelly.call("Switch.set", { 'id': 0, 'on': true, toggle_after: 1 });
+            Shelly.call("Switch.set", { 'id': 0, 'on': true, toggle_after: 0.25 });
         }
     }
 };
@@ -44,7 +45,7 @@ let btnAction = {
 let KVSbtn = {
     loadAllButtons: function () {
         Shelly.call("KVS.GetMany", {
-            match: "SBBT*"
+            match: ALLTERCO_DEVICE_NAME_PREFIX +":*"
         },
             function (result, error_code, error_message) {
                 if (error_code !== 0) {
@@ -63,7 +64,7 @@ let KVSbtn = {
     },
     getAllButtons: function () {
         Shelly.call("KVS.GetMany", {
-            match: "SBBT*"
+            match: ALLTERCO_DEVICE_NAME_PREFIX + ":*"
         },
             function (result, error_code, error_message) {
                 if (error_code !== 0) {
@@ -130,13 +131,14 @@ let KVSbtn = {
 
     registerButtonCheck: function (btnName, addr) {
         let button1 = { name: btnName, addr: addr };
+        console.log(JSON.stringify(button1));
         Shelly.call("KVS.Get",
-            { key: btnName },
+            { key: btnName},
             function (result, error_code, error_message, button) {
                 if (error_code !== 0) {
-                    KVSbtn.registerButton(button.name, button.addr);
+                    KVSbtn.registerButton(btnName, button.addr);
                 } else {
-                    print("Boton ya registrado: ", button.name);
+                    print("Boton ya registrado: ", btnName);
                 };
             }, button1);
     }
@@ -246,6 +248,14 @@ let ShellyBLUParser = {
         return result;
     },
 };
+
+function replace(origin, substr, replace) {
+
+    while(origin.indexOf(substr) !== -1){
+      origin = origin.slice(0, origin.indexOf(substr)) + replace + origin.slice(origin.indexOf(substr) + substr.length, origin.length)   
+    }
+    return origin;
+}
 // END BLE DECODING FUNCTIONS -----------------------------------
 
 let ALLTERCO_DEVICE_NAME_PREFIX = "SBBT";
@@ -262,8 +272,7 @@ let last_packet_id = 0x100;
 
 // SCAN OF PAIRING / UNPAIRING BUTTONS (One click for Pairing, Double click for Unpairing)
 function scanBLE(ev, res) {
-    
-    let encontrado = false;
+let encontrado = false;
     //console.log(BUTTONS_ADDR_CACHE[0]);
     if (ev !== BLE.Scanner.SCAN_RESULT) return;
     // skip if there is no service_data member
@@ -297,16 +306,16 @@ function scanBLE(ev, res) {
 
 
 function bleReceived(BTHparsed, res) {
+    let btnName = ALLTERCO_DEVICE_NAME_PREFIX + ':' + replace(BTHparsed.addr, ':','');
     if (CONFIG_MODE) {
         if (BTHparsed.Button === 1) {
-            KVSbtn.registerButtonCheck(res.local_name, BTHparsed.addr);
+            
+            KVSbtn.registerButtonCheck(btnName, BTHparsed.addr);
         } else if (BTHparsed.Button === 2) {
-            KVSbtn.deleteButton(res.local_name);
+            KVSbtn.deleteButton(btnName);
         }
     } else {
-
-        btnAction.buttonPress(res.local_name, BTHparsed);
-        //      buttonPress(BTHparsed);
+        btnAction.buttonPress(btnName, BTHparsed);
     }
 
 }
@@ -319,6 +328,7 @@ let program = {
         } else {
             Timer.set(1000, false, this.startBLEScan);
         };
+       
     },
     // retry several times to start the scanner if script was started before
     // BLE infrastructure was up in the Shelly
@@ -341,3 +351,4 @@ let program = {
 };
 
 program.init();
+
