@@ -1,0 +1,350 @@
+// -----------------------------------------------------------------------
+// Developed by YBC
+//
+// Date: 01/06/2022
+// Version: 1.2
+//
+// Shelly Script: This script allow register up to 45x BLU Button1 to use autonomous cover.  
+// When you push the registered BLU Button1, the cover toggle from stop - open - stop - close.
+//
+// DEVICES: 
+// - Shelly PLUS 2PM (to use bluetooth gateway and run the script),
+// - Shelly BLU Button 1 (to send push)
+//
+// INSTRUCTIONS
+// Register BLU Button1
+// When you plug your Shelly Plus, you have 10 seconds to register and unregister.
+//
+//- Push one time BLU Button1 until 10s you register the button
+//- Push twice BLU Button1 until 10s you unregister the button
+//
+// www.shellycanarias.com
+// -----------------------------------------------------------------------
+let BTHparsedd = null;
+let coverLastDirection = 'opening';
+let coverStatus = 'open';
+//FUNCION DE ACCIONES
+let btnAction = {
+    buttonPress: function (_BTHparsed) {
+        BTHparsedd = _BTHparsed;
+       console.log('coverStatus: ', coverStatus);
+       console.log('coverLastDirection : ', coverLastDirection);
+       
+       if (coverStatus === 'opening' || coverStatus === 'closing'){
+          Shelly.call("Cover.stop", {'id': 0});
+       }else if(coverLastDirection === 'opening'){
+          Shelly.call("Cover.close", {'id': 0});
+       }else if(coverLastDirection === 'closing'){
+          Shelly.call("Cover.open", {'id': 0});
+       }
+    }
+};
+let KVSbtn = {
+    loadAllButtons: function () {
+        Shelly.call("KVS.GetMany", {
+            match: ALLTERCO_DEVICE_NAME_PREFIX +":*"
+        },
+            function (result, error_code, error_message) {
+                if (error_code !== 0) {
+                    return null;
+                }
+                buttons_cache = [];
+                for (let item in result.items) {
+                    if (typeof result.items[item] === "undefined") continue;
+                    //let buttons = [];
+                    buttons_cache.push(result.items[item].value);
+
+                }
+                console.log("Botones cargados ", buttons_cache.length)
+            }
+        );
+    },
+    getAllButtons: function () {
+        Shelly.call("KVS.GetMany", {
+            match: ALLTERCO_DEVICE_NAME_PREFIX + ":*" },
+            function (result, error_code, error_message) {
+                if (error_code !== 0) {
+                    return null;
+                }
+                for (let item in result.items) {
+                    if (typeof result.items[item] === "undefined") continue;
+                    let buttons = [];
+                    buttons.push({ name: item, addr: result.items[item].value })
+                    print(JSON.stringify(buttons));
+                }
+
+                return result.items;
+            }
+        );
+    },
+
+    getButton: function (btnName, callback) {
+        Shelly.call("KVS.Get", {
+            key: btnName,
+        },
+            function (result, error_code, error_message, callback) {
+                if (error_code !== 0) {
+                    console.log('Boton no encontrado');
+                } else {
+                    callback();
+                }
+            }, callback
+        );
+    },
+
+    deleteButton: function (btnName) {
+        Shelly.call("KVS.Delete", {
+            key: btnName,
+        },
+            function (result, error_code, error_message, btnName) {
+                if (error_code === 0) {
+                    print("Boton eliminado: ", btnName);
+                } else {
+                    print("Boton no encontrado: ", btnName);
+                }
+                return error_code === 0;
+            },
+            btnName
+        );
+    },
+
+    registerButton: function (btnName, addr) {
+        Shelly.call("KVS.Set", {
+            key: btnName,
+            value: addr
+        },
+            function (result, error_code, error_message, btnName) {
+                if (error_code === 0) {
+                    print("Boton Registrado correctamente: ", btnName);
+                } else {
+                    print("Boton no Registrado: ", btnName);
+                }
+                return error_code === 0;
+            },
+            btnName
+        );
+    },
+
+    registerButtonCheck: function (btnName, addr) {
+        let button1 = { name: btnName, addr: addr };
+        console.log(JSON.stringify(button1));
+        Shelly.call("KVS.Get",
+            { key: btnName},
+            function (result, error_code, error_message, button) {
+                if (error_code !== 0) {
+                    KVSbtn.registerButton(btnName, button.addr);
+                } else {
+                    print("Boton ya registrado: ", btnName);
+                };
+            }, button1);
+    }
+};
+
+//SCANNER BLUETOOTH
+let uint8 = 0;
+let int8 = 1;
+let uint16 = 2;
+let int16 = 3;
+let uint24 = 4;
+let int24 = 5;
+
+function getByteSize(type) {
+    if (type === uint8 || type === int8) return 1;
+    if (type === uint16 || type === int16) return 2;
+    if (type === uint24 || type === int24) return 3;
+    //impossible as advertisements are much smaller;
+    return 255;
+}
+
+let BTH = [];
+BTH[0x00] = { n: "pid", t: uint8 };
+BTH[0x01] = { n: "Battery", t: uint8, u: "%" };
+BTH[0x05] = { n: "Illuminance", t: uint24, f: 0.01 };
+BTH[0x1a] = { n: "Door", t: uint8 };
+BTH[0x20] = { n: "Moisture", t: uint8 };
+BTH[0x2d] = { n: "Window", t: uint8 };
+BTH[0x3a] = { n: "Button", t: uint8 };
+BTH[0x3f] = { n: "Rotation", t: int16, f: 0.1 };
+
+let BTHomeDecoder = {
+    utoi: function (num, bitsz) {
+        let mask = 1 << (bitsz - 1);
+        return num & mask ? num - (1 << bitsz) : num;
+    },
+    getUInt8: function (buffer) {
+        return buffer.at(0);
+    },
+    getInt8: function (buffer) {
+        return this.utoi(this.getUInt8(buffer), 8);
+    },
+    getUInt16LE: function (buffer) {
+        return 0xffff & ((buffer.at(1) << 8) | buffer.at(0));
+    },
+    getInt16LE: function (buffer) {
+        return this.utoi(this.getUInt16LE(buffer), 16);
+    },
+    getUInt24LE: function (buffer) {
+        return (
+            0x00ffffff & ((buffer.at(2) << 16) | (buffer.at(1) << 8) | buffer.at(0))
+        );
+    },
+    getInt24LE: function (buffer) {
+        return this.utoi(this.getUInt24LE(buffer), 24);
+    },
+    getBufValue: function (type, buffer) {
+        if (buffer.length < getByteSize(type)) return null;
+        let res = null;
+        if (type === uint8) res = this.getUInt8(buffer);
+        if (type === int8) res = this.getInt8(buffer);
+        if (type === uint16) res = this.getUInt16LE(buffer);
+        if (type === int16) res = this.getInt16LE(buffer);
+        if (type === uint24) res = this.getUInt24LE(buffer);
+        if (type === int24) res = this.getInt24LE(buffer);
+        return res;
+    },
+    unpack: function (buffer) {
+        // beacons might not provide BTH service data
+        if (typeof buffer !== "string" || buffer.length === 0) return null;
+        let result = {};
+        let _dib = buffer.at(0);
+        result["encryption"] = _dib & 0x1 ? true : false;
+        result["BTHome_version"] = _dib >> 5;
+        if (result["BTHome_version"] !== 2) return null;
+        //Can not handle encrypted data
+        if (result["encryption"]) return result;
+        buffer = buffer.slice(1);
+
+        let _bth;
+        let _value;
+        while (buffer.length > 0) {
+            _bth = BTH[buffer.at(0)];
+            if (typeof _bth === "undefined") {
+                console.log("BTH: unknown type");
+                break;
+            }
+            buffer = buffer.slice(1);
+            _value = this.getBufValue(_bth.t, buffer);
+            if (_value === null) break;
+            if (typeof _bth.f !== "undefined") _value = _value * _bth.f;
+            result[_bth.n] = _value;
+            buffer = buffer.slice(getByteSize(_bth.t));
+        }
+        return result;
+    },
+};
+
+let ShellyBLUParser = {
+    getData: function (res) {
+        let result = BTHomeDecoder.unpack(res.service_data[BTHOME_SVC_ID_STR]);
+        result.addr = res.addr;
+        result.rssi = res.rssi;
+        return result;
+    },
+};
+
+function replace(origin, substr, replace) {
+
+    while(origin.indexOf(substr) !== -1){
+      origin = origin.slice(0, origin.indexOf(substr)) + replace + origin.slice(origin.indexOf(substr) + substr.length, origin.length)   
+    }
+    return origin;
+}
+
+let ALLTERCO_DEVICE_NAME_PREFIX = "SBBT";
+let BTHOME_SVC_ID_STR = "fcd2";
+let SCAN_DURATION = BLE.Scanner.INFINITE_SCAN;
+let CONFIG_DURATION = 10000;
+let CONFIG_MODE = false;
+let buttons_cache = [];
+let ACTIVE_SCAN = true;
+let last_packet_id = 0x100;
+
+// SCAN OF PAIRING / UNPAIRING BUTTONS (One click for Pairing, Double click for Unpairing)
+function scanBLE(ev, res) {
+let encontrado = false;
+    //console.log(BUTTONS_ADDR_CACHE[0]);
+    if (ev !== BLE.Scanner.SCAN_RESULT) return;
+    // skip if there is no service_data member
+    if (typeof res.service_data === 'undefined' || typeof res.service_data[BTHOME_SVC_ID_STR] === 'undefined') return;
+    // skip if we have already found this device
+    if (typeof res.local_name !== 'string') return;
+
+    if (res.local_name.indexOf(ALLTERCO_DEVICE_NAME_PREFIX) !== 0) return;
+
+    let BTHparsed = ShellyBLUParser.getData(res);
+    // skip if parsing failed
+    if (BTHparsed === null) {
+        console.log("Failed to parse BTH data");
+        return;
+    }
+    // skip, we are deduping results
+    if (last_packet_id === BTHparsed.pid) return;
+    last_packet_id = BTHparsed.pid;
+
+    // search the button addr in cache 
+    for (let item in buttons_cache) {
+        if (buttons_cache[item] === res.addr)
+            encontrado = true;
+    }
+    if (encontrado === false && CONFIG_MODE === false) return;
+
+    console.log("Shelly BTH packet: ", JSON.stringify(BTHparsed));
+    bleReceived(BTHparsed, res);
+}
+
+function bleReceived(BTHparsed, res) {
+    let btnName = ALLTERCO_DEVICE_NAME_PREFIX + ':' + replace(BTHparsed.addr, ':','');
+    if (CONFIG_MODE) {
+        if (BTHparsed.Button === 1) {
+            
+            KVSbtn.registerButtonCheck(btnName, BTHparsed.addr);
+        } else if (BTHparsed.Button === 2) {
+            KVSbtn.deleteButton(btnName);
+        }
+    } else {
+        btnAction.buttonPress(btnName, BTHparsed);
+    }
+}
+
+let program = {
+    init: function () {
+        let BLEConfig = Shelly.getComponentConfig('ble');
+        if (BLEConfig.enable === false) {
+            console.log('Error: BLE not enabled');
+        } else {
+            Timer.set(1000, false, this.startBLEScan);
+        };
+       
+    },
+    // retry several times to start the scanner if script was started before
+    // BLE infrastructure was up in the Shelly
+    startBLEScan: function () {
+        let bleScanSuccess = BLE.Scanner.Start({ duration_ms: SCAN_DURATION, active: true }, scanBLE);
+
+        if (bleScanSuccess === false) {
+            Timer.set(1000, false, this.startBLEScan);
+        } else {
+            CONFIG_MODE = true;
+            Timer.set(CONFIG_DURATION, false, program.stopConfigMode);
+            console.log('Emparejamiento de mandos iniciado.... (', CONFIG_DURATION / 1000, 's)');
+        }
+    },
+    stopConfigMode: function () {
+        CONFIG_MODE = false,
+            console.log('Emparejamiento de mandos finalizado');
+        KVSbtn.loadAllButtons();        
+    },
+    
+};
+
+program.init();
+Shelly.addStatusHandler(function(e) {
+    if (e.component === "cover:0") {
+      coverStatus = e.delta.state;
+      if (e.delta.state === "opening" || e.delta.state === "closing") {
+        coverLastDirection = e.delta.state;  
+        console.log(e.delta.state);          
+      }
+    }
+  });
+
